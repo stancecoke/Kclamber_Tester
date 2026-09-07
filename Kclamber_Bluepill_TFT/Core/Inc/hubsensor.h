@@ -17,8 +17,10 @@ typedef struct
     uint16_t        HS_Torque;
     uint16_t        HS_Wheeltime;
     int16_t       	HS_Temperature;
+    int16_t       	HS_Fake_Temperature;
     uint8_t         HS_UARTFail;
     uint8_t         HS_Pedalposition;
+    uint8_t         HS_Protocol;
 
 }Hubsensor_t;
 

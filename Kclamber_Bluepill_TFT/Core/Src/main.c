@@ -120,18 +120,33 @@ int main(void)
    /* Draw "Hello World" message in center */
    ILI9341_DrawString(15, 15, "EBiCS Kclamber", FONTCOLOR, BGCOLOR, 2);
    ILI9341_DrawString(15, 50, "Temperature:", FONTCOLOR, BGCOLOR, 2);
+   ILI9341_DrawString(15, 85, "Pedal position:", FONTCOLOR, BGCOLOR, 2);
+   ILI9341_DrawString(15, 120, "torque:", FONTCOLOR, BGCOLOR, 2);
+   ILI9341_DrawString(15, 155, "speed:", FONTCOLOR, BGCOLOR, 2);
+   ILI9341_DrawString(15, 190, "Protocol:", FONTCOLOR, BGCOLOR, 2);
+   ILI9341_DrawString(15, 225, "UART Fail:", FONTCOLOR, BGCOLOR, 2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1){
   	  char TFT_Buffer[10];
+  	  hubdata.HS_Fake_Temperature=get_temperature();
       /* Blink LED to show system is running */
       //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);  /* LED on PC13 for Blackpill */
-      sprintf(TFT_Buffer,"%d ", get_temperature());
-      ILI9341_DrawString(15, 70, TFT_Buffer, FONTCOLOR, BGCOLOR, 2);
+      sprintf(TFT_Buffer,"%d ", hubdata.HS_Fake_Temperature);
+      ILI9341_DrawString(200, 50, TFT_Buffer, FONTCOLOR, BGCOLOR, 2);
       sprintf(TFT_Buffer,"%d ", hubdata.HS_Pedalposition);
-      ILI9341_DrawString(15, 105, TFT_Buffer, FONTCOLOR, BGCOLOR, 2);
+      ILI9341_DrawString(200, 85, TFT_Buffer, FONTCOLOR, BGCOLOR, 2);
+      sprintf(TFT_Buffer,"%d ", hubdata.HS_Torque);
+      ILI9341_DrawString(200, 120, TFT_Buffer, FONTCOLOR, BGCOLOR, 2);
+      sprintf(TFT_Buffer,"%d ", 3940/hubdata.HS_Wheeltime);
+      ILI9341_DrawString(200, 155, TFT_Buffer, FONTCOLOR, BGCOLOR, 2);
+      sprintf(TFT_Buffer,"%d ", hubdata.HS_Protocol);
+      ILI9341_DrawString(200, 190, TFT_Buffer, FONTCOLOR, BGCOLOR, 2);
+      sprintf(TFT_Buffer,"%d ", hubdata.HS_UARTFail);
+      ILI9341_DrawString(200, 225, TFT_Buffer, FONTCOLOR, BGCOLOR, 2);
+
 
       i++;
       //HAL_Delay(1500);
@@ -139,8 +154,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	  if(ui8_UART_flag==2){
-
-		  Hubsensor_Service(&hubdata);
+		  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);  /* LED on PC13 for Blackpill */
 		  ui8_UART_flag=0;
 		  sprintf(Tx_Buffer,"%d , %d, %d, %d, %d, %d\n ", hubdata.HS_Temperature,hubdata.HS_Pedalposition,hubdata.HS_Pedals_turning,hubdata.HS_Torque,hubdata.HS_Wheeltime,hubdata.HS_Wheel_turning );
 		  Tx_len=strlen(Tx_Buffer);
@@ -392,8 +406,8 @@ uint8_t get_temperature(void){
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 {
+	Hubsensor_Service(&hubdata);
 
-	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);  /* LED on PC13 for Blackpill */
 	ui8_UART_flag=2;
 
 }
