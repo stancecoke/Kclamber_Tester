@@ -121,8 +121,8 @@ int main(void)
    ILI9341_DrawString(15, 15, "EBiCS Kclamber", FONTCOLOR, BGCOLOR, 2);
    ILI9341_DrawString(15, 50, "Temperature:", FONTCOLOR, BGCOLOR, 2);
    ILI9341_DrawString(15, 85, "Pedal position:", FONTCOLOR, BGCOLOR, 2);
-   ILI9341_DrawString(15, 120, "torque:", FONTCOLOR, BGCOLOR, 2);
-   ILI9341_DrawString(15, 155, "speed:", FONTCOLOR, BGCOLOR, 2);
+   ILI9341_DrawString(15, 120, "Torque:", FONTCOLOR, BGCOLOR, 2);
+   ILI9341_DrawString(15, 155, "Speed:", FONTCOLOR, BGCOLOR, 2);
    ILI9341_DrawString(15, 190, "Protocol:", FONTCOLOR, BGCOLOR, 2);
    ILI9341_DrawString(15, 225, "UART Fail:", FONTCOLOR, BGCOLOR, 2);
   /* USER CODE END 2 */

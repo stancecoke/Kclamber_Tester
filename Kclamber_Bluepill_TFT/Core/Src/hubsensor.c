@@ -9,6 +9,7 @@
 #include "hubsensor.h"
 #include <string.h> //for memcopy function
 #include "main.h"
+#include "usbd_cdc_if.h"
 #define BYTES7
 //#define BYTES8
 
@@ -72,9 +73,12 @@ void Hubsensor_Service (Hubsensor_t* HS_data){
 				HS_data->HS_Wheeltime = ((HubMessage[4]&31)<<8)+(HubMessage[5]);
 
 			}
-			//printf_("%d, %d, %d, %d, %d, %d, %d\r\n",i, HS_data->HS_Overtemperature, HS_data->HS_Pedalposition, HS_data->HS_Pedals_turning, HS_data->HS_Torque, HS_data->HS_Wheel_turning, HS_data->HS_Wheeltime );
-			//printf_("%d\n",DMA1_Channel6->CNDTR);
-			//printf_("%d\n",((UART1_RxBuff[i-7]<<8)+UART1_RxBuff[i-6]));
+			HubMessage[1]=HS_data->HS_Fake_Temperature;
+			i=0;
+			checksum=0;
+			for (i = 0; i < 7; i++) {checksum+=HubMessage[i];}
+			HubMessage[7]=checksum;
+			CDC_Transmit_FS((uint8_t*)HubMessage, 8);
 		}
 		else {
 			//printf_("F\n");
@@ -118,7 +122,7 @@ void Hubsensor_Service (Hubsensor_t* HS_data){
 			HS_data->HS_Pedals_turning = HubMessage[3]>>7;
 			//filter torque value
 			torque_cumulated-=torque_cumulated>>6;
-			if(torque_offset<(HubMessage[1]<<8)+HubMessage[2]&&((HubMessage[1]<<8)+HubMessage[2])<torque_max){ //only cumulate torque, if value is in plausible range
+			if(torque_offset<((HubMessage[1]&0x03)<<8)+HubMessage[2]&&(((HubMessage[1]&0x03)<<8)+HubMessage[2])<torque_max){ //only cumulate torque, if value is in plausible range
 				torque_cumulated+=((HubMessage[1]<<8)+HubMessage[2])-torque_offset;
 				}
 			else{
@@ -129,9 +133,15 @@ void Hubsensor_Service (Hubsensor_t* HS_data){
 			if(((HubMessage[4]&127)<<8)+HubMessage[5]<4501){ //safety reason, filter non plausible values
 				HS_data->HS_Wheeltime = ((HubMessage[4]&127)<<8)+HubMessage[5];
 			}
-			//printf_("%d, %d, %d, %d, %d, %d, %d\r\n",i, HS_data->HS_Overtemperature, HS_data->HS_Pedalposition, HS_data->HS_Pedals_turning, HS_data->HS_Torque, HS_data->HS_Wheel_turning, HS_data->HS_Wheeltime );
-			//printf_("%d\n",DMA1_Channel6->CNDTR);
-			//printf_("%d\n",((UART1_RxBuff[i-7]<<8)+UART1_RxBuff[i-6]));
+			HS_data->HS_Temperature=(HubMessage[1]>>2)+71; //71 is not correct for cold conditions but not more information in the 7Byte protocol.
+			if(HS_data->HS_Fake_Temperature>71){
+				HubMessage[1]=((HS_data->HS_Fake_Temperature)-71)|(HubMessage[1]&0x03);
+			}
+			i=0;
+			checksum=0;
+			for (i = 0; i < 6; i++) {checksum+=HubMessage[i];}
+			HubMessage[6]=checksum;
+			CDC_Transmit_FS((uint8_t*)HubMessage, 7);
 		}
 		else {
 			//printf_("F\n");

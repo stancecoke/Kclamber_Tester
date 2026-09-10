@@ -38,6 +38,7 @@ extern "C" {
 /* USER CODE BEGIN ET */
 extern UART_HandleTypeDef huart1;
 extern DMA_HandleTypeDef hdma_usart1_rx;
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
