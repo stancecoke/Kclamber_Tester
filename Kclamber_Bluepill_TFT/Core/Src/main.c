@@ -54,6 +54,7 @@ SPI_HandleTypeDef hspi2;
 
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
+DMA_HandleTypeDef hdma_usart1_tx;
 
 /* USER CODE BEGIN PV */
 int i=0;
@@ -159,6 +160,8 @@ int main(void)
 		  sprintf(Tx_Buffer,"%d , %d, %d, %d, %d, %d\n ", hubdata.HS_Temperature,hubdata.HS_Pedalposition,hubdata.HS_Pedals_turning,hubdata.HS_Torque,hubdata.HS_Wheeltime,hubdata.HS_Wheel_turning );
 		  Tx_len=strlen(Tx_Buffer);
 		  CDC_Transmit_FS((uint8_t*)Tx_Buffer, Tx_len);
+		  //HAL_UART_Transmit_DMA(&huart1, (uint8_t *)&Tx_Buffer, Tx_len);
+		  //HAL_UART_Transmit(&huart1, (uint8_t *)&Tx_Buffer, Tx_len, 1000);
 	  }
   }
   /* USER CODE END 3 */
@@ -324,7 +327,7 @@ static void MX_USART1_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART1_Init 2 */
-
+  __HAL_UART_ENABLE(&huart1);
   /* USER CODE END USART1_Init 2 */
 
 }
@@ -339,6 +342,9 @@ static void MX_DMA_Init(void)
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
+  /* DMA1_Channel4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
   /* DMA1_Channel5_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
@@ -411,6 +417,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 	ui8_UART_flag=2;
 
 }
+
+//void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
+//{
+//	//ui8_UART_TxCplt_flag=1;
+//}
+//void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle) {
+//
+//
+//}
 /* USER CODE END 4 */
 
 /**

@@ -9,7 +9,6 @@
 #include "hubsensor.h"
 #include <string.h> //for memcopy function
 #include "main.h"
-#include "usbd_cdc_if.h"
 #define BYTES7
 //#define BYTES8
 
@@ -78,7 +77,7 @@ void Hubsensor_Service (Hubsensor_t* HS_data){
 			checksum=0;
 			for (i = 0; i < 7; i++) {checksum+=HubMessage[i];}
 			HubMessage[7]=checksum;
-			CDC_Transmit_FS((uint8_t*)HubMessage, 8);
+			HAL_UART_Transmit_DMA(&huart1, (uint8_t *)&HubMessage, 8);
 		}
 		else {
 			//printf_("F\n");
@@ -141,7 +140,8 @@ void Hubsensor_Service (Hubsensor_t* HS_data){
 			checksum=0;
 			for (i = 0; i < 6; i++) {checksum+=HubMessage[i];}
 			HubMessage[6]=checksum;
-			CDC_Transmit_FS((uint8_t*)HubMessage, 7);
+			HAL_UART_Transmit_DMA(&huart1, (uint8_t *)&HubMessage, 7);
+
 		}
 		else {
 			//printf_("F\n");
