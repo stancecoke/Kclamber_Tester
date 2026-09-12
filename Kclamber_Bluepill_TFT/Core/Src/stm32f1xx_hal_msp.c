@@ -219,7 +219,15 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
   if(huart->Instance==USART1)
   {
   /* USER CODE BEGIN USART1_MspInit 0 */
+	  // 1. Zuerst das Statusregister (SR) einlesen
+	  volatile uint32_t tmpreg = huart1.Instance->SR;
 
+	  // 2. Direkt danach das Datenregister (DR) auslesen (leert gleichzeitig den Buffer)
+	  volatile uint32_t tmpreg2 = huart1.Instance->DR;
+
+	  // Verhindert Compiler-Warnungen wegen nicht genutzter Variablen
+	  UNUSED(tmpreg);
+	  UNUSED(tmpreg2);
   /* USER CODE END USART1_MspInit 0 */
     /* Peripheral clock enable */
     __HAL_RCC_USART1_CLK_ENABLE();

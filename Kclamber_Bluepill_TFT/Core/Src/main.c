@@ -92,7 +92,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  HAL_Delay(500);
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -104,6 +104,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_SPI2_Init();
@@ -126,6 +127,7 @@ int main(void)
    ILI9341_DrawString(15, 155, "Speed:", FONTCOLOR, BGCOLOR, 2);
    ILI9341_DrawString(15, 190, "Protocol:", FONTCOLOR, BGCOLOR, 2);
    ILI9341_DrawString(15, 225, "UART Fail:", FONTCOLOR, BGCOLOR, 2);
+   HAL_UART_IRQHandler(&huart1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -163,6 +165,7 @@ int main(void)
 		  //HAL_UART_Transmit_DMA(&huart1, (uint8_t *)&Tx_Buffer, Tx_len);
 		  //HAL_UART_Transmit(&huart1, (uint8_t *)&Tx_Buffer, Tx_len, 1000);
 	  }
+
   }
   /* USER CODE END 3 */
 }
@@ -327,7 +330,7 @@ static void MX_USART1_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART1_Init 2 */
-  __HAL_UART_ENABLE(&huart1);
+  //__HAL_UART_ENABLE(&huart1);
   /* USER CODE END USART1_Init 2 */
 
 }
@@ -422,10 +425,17 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 //{
 //	//ui8_UART_TxCplt_flag=1;
 //}
-//void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle) {
-//
-//
-//}
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle) {
+	  // 1. Zuerst das Statusregister (SR) einlesen
+	  volatile uint32_t tmpreg = huart1.Instance->SR;
+
+	  // 2. Direkt danach das Datenregister (DR) auslesen (leert gleichzeitig den Buffer)
+	  volatile uint32_t tmpreg2 = huart1.Instance->DR;
+
+	  // Verhindert Compiler-Warnungen wegen nicht genutzter Variablen
+	  UNUSED(tmpreg);
+	  UNUSED(tmpreg2);
+}
 /* USER CODE END 4 */
 
 /**
