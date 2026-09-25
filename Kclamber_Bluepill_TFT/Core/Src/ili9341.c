@@ -107,7 +107,7 @@ void ILI9341_Init(void) {
 
     /* Memory Access Control */
     ILI9341_WriteCommand(ILI9341_MAC);
-    ILI9341_WriteData(0b00000000); //gespiegelt
+    ILI9341_WriteData(0b11100000); //gespiegelt
 
     /* Pixel Format Set */
     ILI9341_WriteCommand(ILI9341_PIXEL_FORMAT);
