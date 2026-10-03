@@ -13,7 +13,7 @@
 //#define BYTES8
 
 //Hub sends blocks of 8 bytes, one complete message must be within 16 bytes.
-uint8_t HubMessage[8];
+uint8_t HubMessage[16];
 //char buffer[64];
 //extern UART_HandleTypeDef huart1;
 //extern UART_HandleTypeDef huart2;
@@ -25,7 +25,7 @@ uint16_t torque_recent;
 
 
 //#ifdef BYTES8
-static uint8_t UART1_RxBuff[16];
+static uint8_t UART1_RxBuff[32];
 void Hubsensor_Init (Hubsensor_t* HS_data){
     if (HAL_UART_Receive_DMA(&huart1, (uint8_t *)UART1_RxBuff,16) != HAL_OK)
      {
@@ -49,6 +49,7 @@ void Hubsensor_Service (Hubsensor_t* HS_data){
 	case 8:
 		memcpy(HubMessage,UART1_RxBuff+i,8);
 		//HAL_UART_Transmit_DMA(&huart1, (uint8_t *)&HubMessage, 8);
+		checksum=0;
 		for (i = 0; i < 7; i++) {checksum+=HubMessage[i];}
 		//printf_("%d\n",DMA1_Channel6->CNDTR);
 		//printf_("%d , %d,\n ",checksum,HubMessage[7] );
@@ -68,8 +69,9 @@ void Hubsensor_Service (Hubsensor_t* HS_data){
 				}
 			HS_data->HS_Torque = torque_cumulated>>4;
 			HS_data->HS_Wheel_turning = (HubMessage[4]>>5)&1;
-			if(((HubMessage[4]&31)<<8)+(HubMessage[5])<4501){ //safety reason, filter non plausible values
-				HS_data->HS_Wheeltime = ((HubMessage[4]&31)<<8)+(HubMessage[5]);
+			int temp= ((HubMessage[4]&31)<<8)+HubMessage[5];
+			if(temp&&temp<4501){ //safety reason, filter non plausible values, avoid division by zero
+				HS_data->HS_Wheeltime = temp;
 
 			}
 			HubMessage[1]=HS_data->HS_Fake_Temperature;
@@ -112,6 +114,7 @@ void Hubsensor_Service (Hubsensor_t* HS_data){
 	case 7:
 		memcpy(HubMessage,UART1_RxBuff+i,7);
 		//HAL_UART_Transmit_DMA(&huart1, (uint8_t *)&HubMessage, 8);
+		checksum=0;
 		for (i = 0; i < 6; i++) {checksum+=HubMessage[i];}
 		//printf_("%d\n",DMA1_Channel6->CNDTR);
 		//printf_("%d , %d,\n ",checksum,HubMessage[7] );
@@ -129,8 +132,10 @@ void Hubsensor_Service (Hubsensor_t* HS_data){
 				}
 			HS_data->HS_Torque = torque_cumulated>>6;
 			HS_data->HS_Wheel_turning = HubMessage[4]>>7;
-			if(((HubMessage[4]&127)<<8)+HubMessage[5]<4501){ //safety reason, filter non plausible values
-				HS_data->HS_Wheeltime = ((HubMessage[4]&127)<<8)+HubMessage[5];
+			int temp= ((HubMessage[4]&31)<<8)+HubMessage[5];
+			if(temp&&temp<4501){ //safety reason, filter non plausible values, avoid division by zero
+				HS_data->HS_Wheeltime = temp;
+
 			}
 			HS_data->HS_Temperature=(HubMessage[1]>>2)+71; //71 is not correct for cold conditions but not more information in the 7Byte protocol.
 			if(HS_data->HS_Fake_Temperature>71){

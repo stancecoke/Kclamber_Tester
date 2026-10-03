@@ -92,7 +92,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  HAL_Delay(500);
+  HAL_Delay(100);
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -112,6 +112,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   Hubsensor_Init (&hubdata);
+  //HAL_UART_IRQHandler(&huart1); //call once to reset UART buffer registers
   /* Initialize ILI9341 display */
 
    ILI9341_Init();
@@ -129,7 +130,7 @@ int main(void)
    ILI9341_DrawString(15, 225, "Protocol:", FONTCOLOR, BGCOLOR, 2);
    ILI9341_DrawString(15, 260, "UART Fail:", FONTCOLOR, BGCOLOR, 2);
 
-   HAL_UART_IRQHandler(&huart1);
+   hubdata.HS_Wheeltime=15000;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -147,7 +148,7 @@ int main(void)
       ILI9341_DrawString(200, 120, TFT_Buffer, FONTCOLOR, BGCOLOR, 2);
       sprintf(TFT_Buffer,"%d ", hubdata.HS_Torque);
       ILI9341_DrawString(200, 155, TFT_Buffer, FONTCOLOR, BGCOLOR, 2);
-      sprintf(TFT_Buffer,"%d ", 3940/hubdata.HS_Wheeltime);
+      sprintf(TFT_Buffer,"%d ", 3940/(hubdata.HS_Wheeltime+1));
       ILI9341_DrawString(200, 190, TFT_Buffer, FONTCOLOR, BGCOLOR, 2);
       sprintf(TFT_Buffer,"%d ", hubdata.HS_Protocol);
       ILI9341_DrawString(200, 225, TFT_Buffer, FONTCOLOR, BGCOLOR, 2);
@@ -155,13 +156,19 @@ int main(void)
       ILI9341_DrawString(200, 260, TFT_Buffer, FONTCOLOR, BGCOLOR, 2);
 
       i++;
+//      if(i>5){
+//    	  MX_USART1_UART_Init();
+//    	  i=0;
+//    	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+//      }
       //HAL_Delay(1500);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 	  if(ui8_UART_flag==2){
-		  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);  /* LED on PC13 for Blackpill */
+		 // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);  /* LED on PC13 for Blackpill */
 		  ui8_UART_flag=0;
+
 		  sprintf(Tx_Buffer,"%d , %d, %d, %d, %d, %d\n ", hubdata.HS_Temperature,hubdata.HS_Pedalposition,hubdata.HS_Pedals_turning,hubdata.HS_Torque,hubdata.HS_Wheeltime,hubdata.HS_Wheel_turning );
 		  Tx_len=strlen(Tx_Buffer);
 		  CDC_Transmit_FS((uint8_t*)Tx_Buffer, Tx_len);
@@ -349,10 +356,10 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Channel4_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
   /* DMA1_Channel5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 1, 1);
   HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
 
 }
@@ -419,7 +426,7 @@ uint8_t get_temperature(void){
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 {
 	Hubsensor_Service(&hubdata);
-
+	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
 	ui8_UART_flag=2;
 
 }
@@ -429,15 +436,30 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 //	//ui8_UART_TxCplt_flag=1;
 //}
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle) {
-	  // 1. Zuerst das Statusregister (SR) einlesen
-	  volatile uint32_t tmpreg = huart1.Instance->SR;
+    if(UartHandle->Instance == USART1) {
+        // 1. Read status register to clear error flags
+        volatile uint32_t tmpreg = huart1.Instance->SR;
 
-	  // 2. Direkt danach das Datenregister (DR) auslesen (leert gleichzeitig den Buffer)
-	  volatile uint32_t tmpreg2 = huart1.Instance->DR;
+        // 2. Read data register to clear it
+        volatile uint32_t tmpreg2 = huart1.Instance->DR;
 
-	  // Verhindert Compiler-Warnungen wegen nicht genutzter Variablen
-	  UNUSED(tmpreg);
-	  UNUSED(tmpreg2);
+        // Prevent compiler warnings
+        UNUSED(tmpreg);
+        UNUSED(tmpreg2);
+
+        // 3. CRITICAL: Restart UART reception after error
+        if(__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) == RESET) {
+            // Abort any ongoing DMA operations
+            HAL_UART_AbortReceive(&huart1);
+
+            // Reinitialize UART for receiving
+            huart1.RxState = HAL_UART_STATE_READY;
+            huart1.ErrorCode = HAL_UART_ERROR_NONE;
+
+            // Restart DMA reception if using DMA
+            Hubsensor_Init (&hubdata);
+        }
+    }
 }
 /* USER CODE END 4 */
 
